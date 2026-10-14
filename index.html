@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ma bibliotheque de jeux</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #1a1a2e; color: #eee; font-family: sans-serif; padding: 20px; }
+  h1 { text-align: center; margin-bottom: 24px; font-size: 2em; color: #e94560; }
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 400;
+    display: flex; align-items: center; justify-content: center; }
+  .overlay.hidden { display: none; }
+  .modal { background: #16213e; border: 2px solid #e94560; border-radius: 20px;
+    padding: 36px; width: 100%; max-width: 420px; position: relative;
+    max-height: 85vh; overflow-y: auto; }
+  .modal::-webkit-scrollbar { width: 6px; }
+  .modal::-webkit-scrollbar-track { background: #1a1a2e; border-radius: 3px; }
+  .modal::-webkit-scrollbar-thumb { background: #e94560; border-radius: 3px; }
+  .modal h2 { color: #e94560; margin-bottom: 24px; text-align: center; }
+  .modal input { width: 100%; padding: 11px 14px; border-radius: 8px; border: 1px solid #444;
+    background: #1a1a2e; color: #eee; font-size: .95em; margin-bottom: 12px; }
+  .modal .btn { width: 100%; padding: 12px; border-radius: 30px; border: none;
+    background: linear-gradient(135deg,#e94560,#ff6b81); color:#fff;
+    font-size: 1em; font-weight: 600; cursor: pointer; margin-top: 4px; }
+  .modal .btn-sec { background: #1a1a2e; border: 1px solid #555; color: #aaa;
+    border-radius: 30px; padding: 10px; width: 100%; font-size:.9em; cursor:pointer; margin-top:8px; }
+  .modal .btn-sec:hover { border-color:#e94560; color:#e94560; }
+  .modal .close-x { position: absolute; top: 14px; right: 18px; background: none;
+    border: none; color: #aaa; font-size: 1.4em; cursor: pointer; }
+  .modal .close-x:hover { color: #e94560; }
+  .modal-msg { margin-top: 12px; font-size: .88em; text-align: center; min-height: 20px; }
+  .ok { color: #4caf50; } .err { color: #e94560; }
+  .emoji-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; justify-content: center; }
+  .emoji-opt { font-size: 1.6em; cursor: pointer; padding: 6px; border-radius: 8px;
+    border: 2px solid transparent; transition: border-color .2s; }
+  .emoji-opt:hover { border-color: #e94560; }
+  .emoji-opt.selected { border-color: #e94560; background: rgba(233,69,96,.15); }
+  #profile-screen { position: fixed; inset: 0; background: #1a1a2e; z-index: 300;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 32px; }
+  #profile-screen h2 { font-size: 2em; color: #e94560; }
+  .profile-list { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; }
+  .profile-btn { display: flex; flex-direction: column; align-items: center; gap: 12px;
+    background: #16213e; border: 2px solid #e94560; border-radius: 20px;
+    padding: 28px 36px; cursor: pointer; color: #eee; font-size: 1.1em; font-weight: 600;
+    transition: transform .2s, background .2s; }
+  .profile-btn:hover { background: #e94560; transform: translateY(-6px) scale(1.05); }
+  .profile-btn .avatar-img { width: 72px; height: 72px; border-radius: 50%;
+    object-fit: cover; border: 2px solid #e94560; }
+  .profile-btn .avatar-emoji { font-size: 3em; }
+  .profile-btn-new { display: flex; flex-direction: column; align-items: center; gap: 12px;
+    background: #16213e; border: 2px dashed #555; border-radius: 20px;
+    padding: 28px 36px; cursor: pointer; color: #555; font-size: 1.1em; font-weight: 600;
+    transition: transform .2s, border-color .2s, color .2s; }
+  .profile-btn-new:hover { border-color: #e94560; color: #e94560; transform: translateY(-6px) scale(1.05); }
+  .profile-btn-new .plus { font-size: 3em; line-height: 1; }
+  #current-user-bar { display: flex; align-items: center; justify-content: center;
+    gap: 12px; margin-bottom: 20px; font-size: .95em; color: #aaa; }
+  #bar-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover;
+    border: 2px solid #e94560; display: none; }
+  #bar-username { color: #e94560; font-weight: 700; }
+  .bar-btn { background: none; border: 1px solid #555; color: #aaa;
+    border-radius: 20px; padding: 4px 14px; cursor: pointer; font-size: .85em; }
+  .bar-btn:hover { border-color:#e94560; color:#e94560; }
+  .top-actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px; }
+  .action-btn { display: inline-flex; align-items: center; gap: 10px; padding: 12px 28px;
+    border-radius: 30px; font-weight: 600; text-decoration: none; color: #fff;
+    font-size: 1em; transition: transform .25s ease, box-shadow .25s ease; }
+  .action-btn:hover { transform: translateY(-4px) scale(1.06); box-shadow: 0 10px 22px rgba(0,0,0,.4); }
+  .mail-btn { background: linear-gradient(135deg,#e94560,#ff6b81); }
+  .discord-btn { background: linear-gradient(135deg,#5865F2,#7289da); }
+  .launcher-btn { background: linear-gradient(135deg,#7c6cff,#9b8cff); }
+  .launcher-link { display: inline-flex; align-items: center; gap: 8px; padding: 10px 22px;
+    border-radius: 999px; background: #16213e; border: 2px solid #7c6cff; color: #eee;
+    font-weight: 600; text-decoration: none; transition: transform .2s, background .2s; }
+  .launcher-link:hover { background: #7c6cff; transform: translateY(-3px); }
+  .youtube-btn { background: linear-gradient(135deg,#ff0000,#ff5c5c); }
+  .twitch-btn { background: linear-gradient(135deg,#9146ff,#b18aff); }
+  .action-btn img { height:28px;width:28px;object-fit:cover;border-radius:6px; }
+  #history-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.75); z-index: 450;
+    display: flex; align-items: center; justify-content: center; }
+  #history-overlay.hidden { display: none; }
+  #history-modal { background: #16213e; border: 2px solid #e94560; border-radius: 20px;
+    padding: 32px; width: 100%; max-width: 600px; max-height: 80vh;
+    display: flex; flex-direction: column; position: relative; }
+  #history-modal h2 { color: #e94560; margin-bottom: 20px; text-align: center; font-size: 1.4em; }
+  #history-modal .close-x { position: absolute; top: 14px; right: 18px; background: none;
+    border: none; color: #aaa; font-size: 1.4em; cursor: pointer; }
+  #history-modal .close-x:hover { color: #e94560; }
+  #history-list { overflow-y: auto; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  #history-list::-webkit-scrollbar { width: 6px; }
+  #history-list::-webkit-scrollbar-track { background: #1a1a2e; border-radius: 3px; }
+  #history-list::-webkit-scrollbar-thumb { background: #e94560; border-radius: 3px; }
+  .history-card { background: #0f3460; border: 1px solid #2a2a4a; border-radius: 12px;
+    padding: 14px 18px; display: flex; align-items: center; gap: 12px; }
+  .history-card:hover { border-color: #e94560; }
+  .history-info { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+  .history-name { font-size: .95em; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .history-meta { font-size: .78em; color: #aaa; display: flex; gap: 12px; flex-wrap: wrap; }
+  .history-play { background: linear-gradient(135deg,#e94560,#ff6b81); color: #fff;
+    border: none; border-radius: 20px; padding: 7px 18px; cursor: pointer;
+    font-size: .85em; font-weight: 600; white-space: nowrap;
+    transition: transform .2s, box-shadow .2s; flex-shrink: 0; }
+  .history-play:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(233,69,96,.4); }
+  .history-console-icon { height: 28px; width: 28px; object-fit: contain; border-radius: 4px; flex-shrink: 0; }
+  .consoles { display: flex; gap: 22px; justify-content: center; flex-wrap: wrap; margin-bottom: 36px; }
+  .console-btn { display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px; width: 200px; height: 200px; border: 2px solid #e94560; background: #16213e;
+    color: #eee; border-radius: 26px; cursor: pointer; font-size: 1.15em; font-weight: 600;
+    text-align: center; padding: 20px;
+    transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s, background .25s, border-color .25s; }
+  .console-btn img { height: 80px; width: auto; object-fit: contain; }
+  .console-btn:hover { transform: translateY(-10px) scale(1.07); box-shadow: 0 16px 32px rgba(233,69,96,.45); border-color: #ff6b81; }
+  .console-btn.active { background: #e94560; color: #fff; box-shadow: 0 0 0 4px rgba(233,69,96,.35); transform: translateY(-4px) scale(1.03); }
+  .search-wrap { display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 24px; }
+  #search-toggle { background: #16213e; border: 2px solid #e94560; color: #e94560;
+    width: 48px; height: 48px; border-radius: 50%; font-size: 1.3em; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .2s, background .2s, color .2s; }
+  #search-toggle:hover { transform: scale(1.1); background: #e94560; color: #fff; }
+  #search { display: none; width: 100%; max-width: 420px; padding: 10px 16px;
+    border-radius: 8px; border: 1px solid #444; background: #16213e; color: #eee; font-size: 1em; }
+  #search.visible { display: block; }
+  .games { display: grid; grid-template-columns: repeat(auto-fill,minmax(260px,1fr)); gap: 12px; }
+  .game-card { background: #16213e; border-radius: 10px; padding: 16px;
+    cursor: pointer; transition: transform .2s, background .2s; border: 1px solid #2a2a4a; }
+  .game-card:hover { transform: translateY(-3px); background: #0f3460; }
+  .game-title { font-size: .95em; line-height: 1.4; }
+  .game-console { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+  .game-console img { height: 18px; width: auto; object-fit: contain; }
+  .game-console span { font-size: .75em; color: #e94560; }
+  #placeholder { text-align: center; padding: 40px; color: #888; font-size: 1.1em; }
+  #loading { text-align: center; padding: 40px; color: #888; display: none; }
+  #emulator-container { display: none; position: fixed; inset: 0; background: #000;
+    z-index: 100; flex-direction: column; align-items: center; justify-content: center; }
+  #emulator-container.visible { display: flex; }
+  #close-btn { position: absolute; top: 16px; left: 20px; background: #e94560;
+    color: #fff; border: none; border-radius: 6px; padding: 8px 16px;
+    cursor: pointer; font-size: 1em; z-index: 101; transition: opacity 0.3s; opacity: 1; }
+  #close-btn.hidden { opacity: 0; pointer-events: none; }
+  #game-frame { width: 100%; height: 100%; }
+  #game-frame iframe { width: 100%; height: 100%; border: none; }
+  #save-toast { position: fixed; bottom: 24px; right: 24px; background: #e94560;
+    color: #fff; padding: 12px 20px; border-radius: 10px; font-size: .95em;
+    opacity: 0; transition: opacity .4s; z-index: 500; pointer-events: none; }
+  #save-toast.show { opacity: 1; }
+  #settings-avatar-preview { width: 90px; height: 90px; border-radius: 50%;
+    object-fit: cover; border: 3px solid #e94560; margin: 0 auto 16px; display: block; }
+  #avatar-upload-label { display: block; text-align: center; margin-bottom: 16px;
+    color: #e94560; cursor: pointer; font-size: .9em; text-decoration: underline; }
+  #avatar-file { display: none; }
+  .settings-section { border-top: 1px solid #2a2a4a; margin-top: 16px; padding-top: 16px; }
+  .settings-section h3 { font-size: .95em; color: #aaa; margin-bottom: 12px; }
+  .news-section { width: 100%; max-width: 560px; margin-top: 8px; }
+  .news-section h3 { text-align: center; color: #e94560; font-size: 1.1em; margin-bottom: 14px; }
+  .news-list { display: flex; flex-direction: column; gap: 10px; max-height: 260px; overflow-y: auto; padding-right: 4px; }
+  .news-list::-webkit-scrollbar { width: 6px; }
+  .news-list::-webkit-scrollbar-track { background: #1a1a2e; border-radius: 3px; }
+  .news-list::-webkit-scrollbar-thumb { background: #e94560; border-radius: 3px; }
+  .news-card { background: #16213e; border: 1px solid #2a2a4a; border-radius: 12px; padding: 12px 16px; }
+  .news-card:hover { border-color: #e94560; }
+  .news-title { font-weight: 700; font-size: .95em; color: #eee; margin-bottom: 4px; }
+  .news-text { font-size: .85em; color: #ccc; white-space: pre-wrap; line-height: 1.4; }
+  .news-date { font-size: .72em; color: #888; margin-top: 6px; }
+  .news-empty { text-align: center; color: #888; font-size: .85em; padding: 12px; }
+  .news-admin-item { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .news-admin-del { background: none; border: 1px solid #555; color: #aaa; border-radius: 20px;
+    padding: 3px 10px; cursor: pointer; font-size: .75em; flex-shrink: 0; }
+  .news-admin-del:hover { border-color: #e94560; color: #e94560; }
+  #admin-section textarea { width: 100%; padding: 11px 14px; border-radius: 8px; border: 1px solid #444;
+    background: #1a1a2e; color: #eee; font-size: .9em; margin-bottom: 12px; resize: vertical; min-height: 60px; font-family: inherit; }
+#saves-loading { position: fixed; inset: 0; background: rgba(26,26,46,.97); z-index: 400;
+    display: none; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: #eee; }
+  #saves-loading.show { display: flex; }
+  #saves-loading h2 { color: #e94560; }
+  #saves-bar { width: 260px; height: 8px; background: #333; border-radius: 4px; overflow: hidden; }
+  #saves-bar-fill { height: 100%; width: 0; background: #e94560; transition: width .2s; }
+#video-overlay { position: fixed; inset: 0; background: #1a1a2e; z-index: 350; display: none; flex-direction: column; overflow: auto; padding: 16px 20px; }
+  #video-overlay.show { display: flex; }
+  .v-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .v-head h2 { color: #e94560; margin-right: auto; }
+  .v-tab, .v-close { background: #16213e; border: 2px solid #e94560; color: #eee; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-size: 1em; }
+  .v-tab.active { background: #e94560; }
+  #v-player { width: 100%; max-height: 70vh; background: #000; border-radius: 10px; display: none; margin-bottom: 8px; }
+  #v-now { color: #aaa; margin-bottom: 10px; display: none; }
+  #v-crumbs { color: #aaa; margin-bottom: 10px; }
+  #v-crumbs a { color: #e94560; cursor: pointer; }
+  .v-list { display: grid; grid-template-columns: repeat(auto-fill,minmax(260px,1fr)); gap: 10px; }
+  .v-item { background: #16213e; border: 1px solid #2a2a4a; border-radius: 10px; padding: 14px; cursor: pointer; line-height: 1.4; word-break: break-word; }
+  .v-item:hover { background: #0f3460; }
+  .v-item.playing { border-color: #e94560; }
+</style>
+</head>
+<body>
+
+<div id="saves-loading">
+  <h2>Chargement du profil…</h2>
+  <div id="saves-msg">Téléchargement de tes sauvegardes</div>
+  <div id="saves-bar"><div id="saves-bar-fill"></div></div>
+</div>
+
+<div id="profile-screen">
+  <h2>Qui joue ?</h2>
+  <div class="profile-list" id="profile-list"></div>
+  <a class="launcher-link" href="https://reo.ksos.games/launcher.html">⬇️ Télécharger le launcher (Windows)</a>
+  <div class="news-section">
+    <h3>📰 Actualités</h3>
+    <div class="news-list" id="news-list"></div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="login-overlay">
+  <div class="modal">
+    <h2>🔒 Mot de passe</h2>
+    <p style="text-align:center;color:#aaa;margin-bottom:16px;font-size:.9em" id="login-name"></p>
+    <input type="password" id="login-pw" placeholder="Mot de passe" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn" onclick="doLogin()">Entrer</button>
+    <button class="btn-sec" onclick="showForgot()">Mot de passe oublié ?</button>
+    <button class="btn-sec" onclick="cancelLogin()">Annuler</button>
+    <div class="modal-msg" id="login-msg"></div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="forgot-overlay">
+  <div class="modal">
+    <h2>📧 Réinitialisation</h2>
+    <p style="text-align:center;color:#aaa;margin-bottom:16px;font-size:.9em">Un email va être envoyé à l'adresse enregistrée</p>
+    <button class="btn" onclick="doForgot()">Envoyer le lien</button>
+    <button class="btn-sec" onclick="hideForgot()">Retour</button>
+    <div class="modal-msg" id="forgot-msg"></div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="settings-overlay">
+  <div class="modal">
+    <button class="close-x" onclick="closeSettings()">✕</button>
+    <h2>⚙️ Paramètres</h2>
+    <img id="settings-avatar-preview" src="" alt="avatar">
+    <label id="avatar-upload-label" for="avatar-file">📷 Changer la photo de profil</label>
+    <input type="file" id="avatar-file" accept="image/*" onchange="uploadAvatar(this)">
+    <div class="settings-section">
+      <h3>🔐 Mot de passe</h3>
+      <input type="password" id="set-current-pw" placeholder="Mot de passe actuel (si déjà défini)">
+      <input type="password" id="set-new-pw" placeholder="Nouveau mot de passe">
+      <input type="email" id="set-email" placeholder="Email (pour reset mot de passe)">
+      <button class="btn" onclick="savePassword()">Enregistrer</button>
+      <div class="modal-msg" id="settings-msg"></div>
+    </div>
+    <div class="settings-section">
+      <h3>🗑️ Supprimer le mot de passe</h3>
+      <input type="password" id="remove-pw" placeholder="Mot de passe actuel">
+      <button class="btn-sec" onclick="removePassword()">Supprimer le mot de passe</button>
+      <div class="modal-msg" id="remove-msg"></div>
+    </div>
+    <div class="settings-section" id="admin-section" style="display:none">
+      <h3>👑 Admin</h3>
+      <div id="admin-user-list"></div>
+      <h3 style="margin-top:18px">📰 Publier une annonce</h3>
+      <input type="text" id="news-title" placeholder="Titre" maxlength="60">
+      <textarea id="news-text" placeholder="Texte de l'annonce"></textarea>
+      <button class="btn" onclick="postNews()">Publier</button>
+      <div class="modal-msg" id="news-msg"></div>
+      <div id="admin-news-list" style="margin-top:12px"></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="create-overlay">
+  <div class="modal">
+    <button class="close-x" onclick="closeCreate()">✕</button>
+    <h2>👤 Nouveau profil</h2>
+    <input type="text" id="create-label" placeholder="Ton prénom ou pseudo" maxlength="20">
+    <p style="font-size:.85em;color:#aaa;margin-bottom:10px">Choisis un emoji :</p>
+    <div class="emoji-grid" id="emoji-grid"></div>
+    <button class="btn" onclick="doCreateProfile()">Créer mon profil</button>
+    <button class="btn-sec" onclick="closeCreate()">Annuler</button>
+    <div class="modal-msg" id="create-msg"></div>
+  </div>
+</div>
+
+<div id="history-overlay" class="hidden">
+  <div id="history-modal">
+    <button class="close-x" onclick="closeHistory()">✕</button>
+    <h2>🕒 Dernières sessions</h2>
+    <div id="history-list"></div>
+  </div>
+</div>
+
+<div id="video-overlay">
+  <div class="v-head">
+    <h2>🎬 Vidéos</h2>
+    <button class="v-tab" id="v-tab-films" onclick="vGo('films','')">Films</button>
+    <button class="v-tab" id="v-tab-series" onclick="vGo('series','')">Séries</button>
+    <button class="v-close" onclick="closeVideos()">✕ Fermer</button>
+  </div>
+  <video id="v-player" controls playsinline></video>
+  <div id="v-now"></div>
+  <div id="v-crumbs"></div>
+  <div class="v-list" id="v-list"></div>
+</div>
+
+<h1>Ma bibliotheque</h1>
+
+<div id="current-user-bar">
+  <img id="bar-avatar" src="" alt="">
+  Connecté : <span id="bar-username"></span>
+  <button class="bar-btn" onclick="openHistory()">🕒 Historique</button>
+  <button class="bar-btn" onclick="openSettings()">⚙️ Paramètres</button>
+  <button class="bar-btn" onclick="changeUser()">Changer</button>
+</div>
+
+<div class="top-actions">
+  <a class="action-btn" href="#" onclick="openVideos();return false;"><span>🎬</span> Vidéos</a>
+  <a class="action-btn mail-btn" href="mailto:arthurranchin294@gmail.com?subject=Demande%20d%27ajout%20de%20jeu">
+    <span>✉️</span> Proposer un jeu
+  </a>
+  <a class="action-btn discord-btn" href="https://discord.gg/7bFKvWk2by" target="_blank" rel="noopener">
+    <img src="/images/consoles/discord.jpg"> Discord
+  </a>
+  <a class="action-btn youtube-btn" href="https://www.youtube.com/@Reo.287" target="_blank" rel="noopener">
+    <img src="/images/consoles/yt.png"> YouTube
+  </a>
+  <a class="action-btn twitch-btn" href="https://twitch.tv/lereo0" target="_blank" rel="noopener">
+    <img src="/images/consoles/twitch.jpg"> Twitch
+  </a>
+  <a class="action-btn launcher-btn" href="https://reo.ksos.games/launcher.html">
+    <span>⬇️</span> Launcher
+  </a>
+</div>
+
+<div class="consoles">
+  <button class="console-btn" onclick="filterConsole('GB',event)"><img src="/images/consoles/gameboy.jpg" onerror="this.style.display='none'" alt="">Game Boy</button>
+  <button class="console-btn" onclick="filterConsole('GBC',event)"><img src="/images/consoles/gb-color.jpg" onerror="this.style.display='none'" alt="">Game Boy Color</button>
+  <button class="console-btn" onclick="filterConsole('GBA',event)"><img src="/images/consoles/gba.jpg" onerror="this.style.display='none'" alt="">Game Boy Advance</button>
+  <button class="console-btn" onclick="filterConsole('NES',event)"><img src="/images/consoles/nes.jpg" onerror="this.style.display='none'" alt="">NES</button>
+  <button class="console-btn" onclick="filterConsole('SNES',event)"><img src="/images/consoles/snes.jpg" onerror="this.style.display='none'" alt="">SNES</button>
+  <button class="console-btn" onclick="filterConsole('MEGADRIVE',event)"><img src="/images/consoles/megadrive.jpg" onerror="this.style.display='none'" alt="">Mega Drive</button>
+  <button class="console-btn" onclick="filterConsole('N64',event)"><img src="/images/consoles/N64.jpg" onerror="this.style.display='none'" alt="">Nintendo 64</button>
+  <button class="console-btn" onclick="filterConsole('PS1',event)"><img src="/images/consoles/PS1.jpg" onerror="this.style.display='none'" alt="">PlayStation</button>
+  <button class="console-btn" onclick="filterConsole('DS',event)"><img src="/images/consoles/NDS.jpg" onerror="this.style.display='none'" alt="">Nintendo DS</button>
+  <button class="console-btn" onclick="filterConsole('3DS',event)"><img src="/images/consoles/3ds.jpg" onerror="this.style.display='none'" alt="">Nintendo 3DS</button>
+</div>
+
+<div class="search-wrap">
+  <button id="search-toggle" onclick="toggleSearch()">🔍</button>
+  <input type="text" id="search" placeholder="Rechercher un jeu..." oninput="filterGames()">
+</div>
+
+<div id="loading">Chargement des jeux...</div>
+<div id="placeholder">Choisis une console ci-dessus pour afficher les jeux</div>
+<div class="games" id="games-list"></div>
+
+<div id="emulator-container">
+  <button id="close-btn" onclick="closeEmulator()">Fermer</button>
+  <div id="game-frame"></div>
+</div>
+
+<div id="save-toast">💾 Save synchronisée !</div>
+
+<script>
+var CONSOLES = {
+  GB:        { ext:['.gb'],                              core:'gambatte',         label:'Game Boy',        icon:'/images/consoles/gameboy.jpg' },
+  GBC:       { ext:['.gbc'],                             core:'gambatte',         label:'Game Boy Color',  icon:'/images/consoles/gb-color.jpg' },
+  GBA:       { ext:['.gba'],                             core:'mgba',             label:'Game Boy Advance',icon:'/images/consoles/gba.jpg' },
+  NES:       { ext:['.nes'],                             core:'fceumm',           label:'NES',             icon:'/images/consoles/nes.jpg' },
+  SNES:      { ext:['.sfc','.smc'],                      core:'snes9x',           label:'SNES',            icon:'/images/consoles/snes.jpg' },
+  MEGADRIVE: { ext:['.md','.bin','.gen'],                core:'genesis_plus_gx',  label:'Mega Drive',      icon:'/images/consoles/megadrive.jpg' },
+  N64:       { ext:['.z64'],                             core:'mupen64plus_next', label:'Nintendo 64',     icon:'/images/consoles/N64.jpg' },
+  PS1:       { ext:['.chd','.pbp','.cue','.iso','.zip'],core:'pcsx_rearmed',     label:'PlayStation',     icon:'/images/consoles/PS1.jpg' },
+  DS:        { ext:['.nds'],                             core:'melonds',          label:'Nintendo DS',     icon:'/images/consoles/NDS.jpg' },
+  '3DS':     { ext:['.3ds','.cci','.cxi'],                core:'azahar',           label:'Nintendo 3DS',    icon:'/images/consoles/3ds.jpg' }
+};
+var CORE_FOLDER = {
+  'gambatte':         'Gambatte',
+  'mgba':             'mGBA',
+  'fceumm':           'FCEUmm',
+  'snes9x':           'Snes9x',
+  'genesis_plus_gx':  'Genesis Plus GX',
+  'mupen64plus_next': 'Mupen64Plus-Next',
+  'pcsx_rearmed':     'PCSX-ReARMed',
+  'melonds':          'melonDS',
+  'azahar':           'Azahar'
+};
+var EMOJIS = ['🎮','🕹️','👾','⭐','🐉','🦊','🐱','🐸','🌟','🔥','🎯','🏆','🌈','🎲','🦄','🐼','🤖','👻','🎸','🍕'];
+var GB_FOLDERS = ['Europe','USA','Japan','Hacks','Homebrew','Translations','Rev','Proto-unl-demo-beta-sample'];
+var PROFILES = {};
+var allGames=[], currentConsole=null, gameRegistry={};
+var closeBtnTimeout, autoSaveInterval=null, closing=false, currentUser=null, currentGameObj=null;
+var selectedEmoji='🎮', sessionStart=null, _historyCache=[];
+var API='/api';
+
+function initEmojiGrid() {
+  var grid=document.getElementById('emoji-grid'); grid.innerHTML='';
+  EMOJIS.forEach(function(e) {
+    var span=document.createElement('span');
+    span.className='emoji-opt'+(e===selectedEmoji?' selected':'');
+    span.textContent=e;
+    span.onclick=function() {
+      selectedEmoji=e;
+      document.querySelectorAll('.emoji-opt').forEach(function(el){el.classList.remove('selected');});
+      span.classList.add('selected');
+    };
+    grid.appendChild(span);
+  });
+}
+
+function openCreate() { selectedEmoji='🎮'; document.getElementById('create-label').value=''; document.getElementById('create-msg').textContent=''; initEmojiGrid(); document.getElementById('create-overlay').classList.remove('hidden'); }
+function closeCreate() { document.getElementById('create-overlay').classList.add('hidden'); }
+
+function doCreateProfile() {
+  var label=document.getElementById('create-label').value.trim();
+  var msg=document.getElementById('create-msg');
+  if (!label) { msg.className='modal-msg err'; msg.textContent='Entre un pseudo'; return; }
+  msg.className='modal-msg'; msg.textContent='Création...';
+  fetch(API+'/user',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:label,label:label,emoji:selectedEmoji})})
+    .then(function(r){return r.json();}).then(function(d){
+      if (d.ok) { msg.className='modal-msg ok'; msg.textContent='✅ Profil créé !'; setTimeout(function(){closeCreate();loadProfiles();},1000); }
+      else { msg.className='modal-msg err'; msg.textContent='❌ '+(d.error||'Erreur'); }
+    }).catch(function(){ msg.className='modal-msg err'; msg.textContent='❌ Erreur réseau'; });
+}
+
+function buildProfileList() {
+  var list=document.getElementById('profile-list'); list.innerHTML='';
+  Object.keys(PROFILES).forEach(function(key) {
+    var p=PROFILES[key];
+    var btn=document.createElement('button'); btn.className='profile-btn';
+    btn.innerHTML=(p.avatar?'<img class="avatar-img" src="'+p.avatar+'?t='+Date.now()+'" alt="">':'<span class="avatar-emoji">'+p.emoji+'</span>')+'<span>'+p.label+'</span>';
+    btn.onclick=function(){tryLogin(key);};
+    list.appendChild(btn);
+  });
+
+}
+
+function loadProfiles() {
+  fetch(API+'/users').then(function(r){return r.json();}).then(function(data){
+    PROFILES=data; buildProfileList();
+  }).catch(function(){buildProfileList();});
+}
+
+function tryLogin(user) {
+  if (PROFILES[user].hasPassword) {
+    currentUser=user;
+    document.getElementById('login-name').textContent=PROFILES[user].label;
+    document.getElementById('login-pw').value='';
+    document.getElementById('login-msg').textContent='';
+    document.getElementById('login-overlay').classList.remove('hidden');
+  } else { currentUser=user; finishLogin(user); }
+}
+
+function doLogin() {
+  var pw=document.getElementById('login-pw').value;
+  fetch(API+'/user/'+currentUser+'/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})})
+    .then(function(r){return r.json();}).then(function(d){
+      if (d.ok) { document.getElementById('login-overlay').classList.add('hidden'); finishLogin(currentUser); }
+      else { var m=document.getElementById('login-msg'); m.className='modal-msg err'; m.textContent='❌ Mot de passe incorrect'; }
+    });
+}
+
+function cancelLogin() { currentUser=null; document.getElementById('login-overlay').classList.add('hidden'); }
+
+function finishLogin(user) {
+  currentUser=user;
+  var p=PROFILES[user];
+  document.getElementById('saves-loading').classList.add('show');
+  prefetchSaves(user).then(function(){
+    document.getElementById('saves-loading').classList.remove('show');
+    document.getElementById('profile-screen').style.display='none';
+    document.getElementById('bar-username').textContent=p.label;
+    var barAvatar=document.getElementById('bar-avatar');
+    if (p.avatar) { barAvatar.src=p.avatar+'?t='+Date.now(); barAvatar.style.display='block'; }
+    else { barAvatar.style.display='none'; }
+  });
+}
+
+function changeUser() { currentUser=null; savesCache={}; document.getElementById('profile-screen').style.display='flex'; loadProfiles(); }
+
+function showForgot() { document.getElementById('login-overlay').classList.add('hidden'); document.getElementById('forgot-msg').textContent=''; document.getElementById('forgot-overlay').classList.remove('hidden'); }
+function hideForgot() { document.getElementById('forgot-overlay').classList.add('hidden'); document.getElementById('login-overlay').classList.remove('hidden'); }
+function doForgot() {
+  var msg=document.getElementById('forgot-msg'); msg.className='modal-msg'; msg.textContent='Envoi...';
+  fetch(API+'/user/'+currentUser+'/forgot',{method:'POST'}).then(function(r){return r.json();}).then(function(d){
+    if (d.ok) { msg.className='modal-msg ok'; msg.textContent='✅ Email envoyé !'; }
+    else { msg.className='modal-msg err'; msg.textContent='❌ '+(d.error||'Erreur'); }
+  });
+}
+
+function openSettings() {
+  var p=PROFILES[currentUser];
+  document.getElementById('settings-avatar-preview').src=p.avatar?p.avatar+'?t='+Date.now():'';
+  document.getElementById('set-current-pw').value='';
+  document.getElementById('set-new-pw').value='';
+  document.getElementById('set-email').value='';
+  document.getElementById('settings-msg').textContent='';
+  document.getElementById('settings-overlay').classList.remove('hidden');
+  var adminSection=document.getElementById('admin-section');
+  if(currentUser==='reo'){
+    adminSection.style.display='block';
+    loadAdminUsers();
+    loadAdminNews();
+  } else {
+    adminSection.style.display='none';
+  }
+}
+
+function loadNews() {
+  fetch(API+'/news').then(function(r){return r.json();}).then(function(d){
+    renderNews(d.news||[]);
+  }).catch(function(){renderNews([]);});
+}
+
+function renderNews(news) {
+  var list=document.getElementById('news-list');
+  if (!news.length) { list.innerHTML='<div class="news-empty">Aucune actualité pour l\'instant</div>'; return; }
+  var html='';
+  for (var i=0;i<news.length;i++) {
+    var n=news[i];
+    html+='<div class="news-card">';
+    html+='<div class="news-title">'+escapeHtml(n.title)+'</div>';
+    html+='<div class="news-text">'+escapeHtml(n.text)+'</div>';
+    html+='<div class="news-date">'+formatDate(n.createdAt)+'</div>';
+    html+='</div>';
+  }
+  list.innerHTML=html;
+}
+
+function escapeHtml(s) {
+  var d=document.createElement('div'); d.textContent=s||''; return d.innerHTML;
+}
+
+function postNews() {
+  var title=document.getElementById('news-title').value.trim();
+  var text=document.getElementById('news-text').value.trim();
+  var msg=document.getElementById('news-msg');
+  if (!title||!text) { msg.className='modal-msg err'; msg.textContent='Titre et texte requis'; return; }
+  msg.className='modal-msg'; msg.textContent='Publication...';
+  fetch(API+'/news',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:title,text:text,admin:currentUser})})
+    .then(function(r){return r.json();}).then(function(d){
+      if (d.ok) {
+        msg.className='modal-msg ok'; msg.textContent='✅ Publié !';
+        document.getElementById('news-title').value='';
+        document.getElementById('news-text').value='';
+        loadNews(); loadAdminNews();
+      } else { msg.className='modal-msg err'; msg.textContent='❌ '+(d.error||'Erreur'); }
+    }).catch(function(){ msg.className='modal-msg err'; msg.textContent='❌ Erreur réseau'; });
+}
+
+function loadAdminNews() {
+  fetch(API+'/news').then(function(r){return r.json();}).then(function(d){
+    var list=document.getElementById('admin-news-list');
+    var news=d.news||[];
+    if (!news.length) { list.innerHTML=''; return; }
+    var html='';
+    for (var i=0;i<news.length;i++) {
+      var n=news[i];
+      html+='<div class="news-admin-item" style="margin-bottom:8px;">';
+      html+='<span style="font-size:.85em;color:#ccc;">'+escapeHtml(n.title)+'</span>';
+      html+='<button class="news-admin-del" onclick="deleteNews(\''+n.id+'\')">🗑️ Suppr.</button>';
+      html+='</div>';
+    }
+    list.innerHTML=html;
+  });
+}
+
+function deleteNews(id) {
+  if (!confirm('Supprimer cette annonce ?')) return;
+  fetch(API+'/news/'+id,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({admin:currentUser})})
+    .then(function(r){return r.json();}).then(function(d){
+      if (d.ok) { loadNews(); loadAdminNews(); }
+      else { showToast('❌ '+(d.error||'Erreur')); }
+    });
+}
+
+function loadAdminUsers() {
+  var list=document.getElementById('admin-user-list');
+  list.innerHTML='';
+  Object.keys(PROFILES).forEach(function(key){
+    if(key===currentUser) return;
+    var p=PROFILES[key];
+    var div=document.createElement('div');
+    div.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;';
+    div.innerHTML=
+      '<span style="font-size:.9em;">'+p.emoji+' '+p.label+'</span>'+
+      '<div style="display:flex;gap:6px;">'+
+        '<button class="btn-sec" style="padding:4px 10px;font-size:.8em;margin:0;" onclick="adminResetPassword(this.dataset.u)" data-u="'+key+'">🔑 Reset mdp</button>'+
+        '<button class="btn-sec" style="padding:4px 10px;font-size:.8em;margin:0;" onclick="adminViewHistory(this.dataset.u,this.dataset.l)" data-u="'+key+'" data-l="'+p.label+'">🕒 Historique</button>'+
+      '</div>';
+    list.appendChild(div);
+  });
+}
+
+function adminResetPassword(user) {
+  if(!confirm('Supprimer le mot de passe de '+PROFILES[user].label+' ?')) return;
+  fetch(API+'/user/'+user+'/removepassword',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({current:'',admin:true})})
+    .then(function(r){return r.json();}).then(function(d){
+      if(d.ok){showToast('✅ Mot de passe supprimé !');}
+      else{showToast('❌ '+(d.error||'Erreur'));}
+    });
+}
+
+function adminViewHistory(user, label) {
+  document.getElementById('settings-overlay').classList.add('hidden');
+  document.getElementById('history-list').innerHTML='<p style="text-align:center;color:#888;padding:20px">Chargement...</p>';
+  document.getElementById('history-modal').querySelector('h2').textContent='🕒 Historique de '+label;
+  document.getElementById('history-overlay').classList.remove('hidden');
+  fetch(API+'/history/'+user).then(function(r){return r.json();}).then(function(d){
+    renderHistory(d.history||[]);
+  });
+}
+function closeSettings() { document.getElementById('settings-overlay').classList.add('hidden'); }
+
+function removePassword() {
+  var cur=document.getElementById('remove-pw').value;
+  var msg=document.getElementById('remove-msg');
+  if (!cur) { msg.className='modal-msg err'; msg.textContent='Entre ton mot de passe actuel'; return; }
+  fetch(API+'/user/'+currentUser+'/removepassword',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({current:cur})})
+    .then(function(r){return r.json();}).then(function(d){
+      if (d.ok) { msg.className='modal-msg ok'; msg.textContent='✅ Mot de passe supprimé !'; PROFILES[currentUser].hasPassword=false; document.getElementById('remove-pw').value=''; }
+      else { msg.className='modal-msg err'; msg.textContent='❌ '+(d.error||'Erreur'); }
+    });
+}
+
+function uploadAvatar(input) {
+  var file=input.files[0]; if (!file) return;
+  var fd=new FormData(); fd.append('avatar',file);
+  fetch(API+'/user/'+currentUser+'/avatar',{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(d){
+    if (d.ok) {
+      PROFILES[currentUser].avatar=d.avatar;
+      document.getElementById('settings-avatar-preview').src=d.avatar+'?t='+Date.now();
+      var b=document.getElementById('bar-avatar'); b.src=d.avatar+'?t='+Date.now(); b.style.display='block';
+      showToast('📷 Photo mise à jour !');
+    }
+  });
+}
+
+function savePassword() {
+  var cur=document.getElementById('set-current-pw').value;
+  var np=document.getElementById('set-new-pw').value;
+  var em=document.getElementById('set-email').value;
+  var msg=document.getElementById('settings-msg');
+  if (!np) { msg.className='modal-msg err'; msg.textContent='Mot de passe vide'; return; }
+  fetch(API+'/user/'+currentUser+'/password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({current:cur,newPassword:np,email:em})})
+    .then(function(r){return r.json();}).then(function(d){
+      if (d.ok) { msg.className='modal-msg ok'; msg.textContent='✅ Enregistré !'; PROFILES[currentUser].hasPassword=true; }
+      else { msg.className='modal-msg err'; msg.textContent='❌ '+(d.error||'Erreur'); }
+    });
+}
+
+var vRoot='films', vPath='', vFiles=[], vIndex=-1;
+function vJoin(dir,name) { return dir ? dir+'/'+name : name; }
+function vUrl(kind,p) { return API+'/video/'+kind+'?user='+encodeURIComponent(currentUser)+'&root='+vRoot+'&path='+encodeURIComponent(p); }
+function openVideos() { document.getElementById('video-overlay').classList.add('show'); vGo(vRoot,vPath); }
+function closeVideos() {
+  var pl=document.getElementById('v-player');
+  pl.pause(); pl.removeAttribute('src'); pl.load(); pl.style.display='none';
+  document.getElementById('v-now').style.display='none';
+  document.getElementById('video-overlay').classList.remove('show');
+}
+function vGo(root,path) {
+  if (root!==vRoot) vIndex=-1;
+  vRoot=root; vPath=path;
+  document.getElementById('v-tab-films').classList.toggle('active',root==='films');
+  document.getElementById('v-tab-series').classList.toggle('active',root==='series');
+  var list=document.getElementById('v-list'); list.textContent='Chargement…';
+  var crumbs=document.getElementById('v-crumbs'); crumbs.textContent='';
+  var parts=path?path.split('/'):[];
+  function crumb(label,target) {
+    var a=document.createElement('a'); a.textContent=label; a.onclick=function(){vGo(root,target);};
+    crumbs.appendChild(a);
+  }
+  crumb(root==='films'?'Films':'Séries','');
+  var acc='';
+  parts.forEach(function(seg){ acc=vJoin(acc,seg); crumbs.appendChild(document.createTextNode(' / ')); crumb(seg,acc); });
+  fetch(vUrl('list',path)).then(function(r){
+    if (r.ok) return r.json();
+    return r.json().catch(function(){return {};}).then(function(d){
+      throw new Error(d.error ? d.error+(d.code?' ['+d.code+']':'') : "route /video/list absente, redémarre l'API (HTTP "+r.status+')');
+    });
+  }).then(function(d){
+    list.textContent=''; vFiles=d.files;
+    d.folders.forEach(function(name){
+      var div=document.createElement('div'); div.className='v-item'; div.textContent='📁 '+name;
+      div.onclick=function(){vGo(root,vJoin(path,name));}; list.appendChild(div);
+    });
+    d.files.forEach(function(name,i){
+      var div=document.createElement('div'); div.className='v-item'; div.textContent='▶️ '+name.replace(/\.[^.]+$/,'');
+      div.onclick=function(){vPlay(i);}; div.dataset.i=i; list.appendChild(div);
+    });
+    if (!d.folders.length&&!d.files.length) list.textContent='Dossier vide';
+  }).catch(function(e){ list.textContent='Impossible de charger le dossier ('+e.message+')'; });
+}
+function vPlay(i) {
+  vIndex=i;
+  var name=vFiles[i], pl=document.getElementById('v-player'), now=document.getElementById('v-now');
+  pl.style.display='block'; now.style.display='block'; now.textContent='▶️ '+name;
+  pl.src=vUrl('stream',vJoin(vPath,name)); pl.play().catch(function(){});
+  document.querySelectorAll('#v-list .v-item').forEach(function(el){el.classList.toggle('playing',el.dataset.i==i);});
+  pl.scrollIntoView({behavior:'smooth',block:'start'});
+}
+(function(){
+  var pl=document.getElementById('v-player');
+  pl.addEventListener('ended',function(){ if (vIndex>=0&&vIndex+1<vFiles.length) vPlay(vIndex+1); });
+  pl.addEventListener('error',function(){
+    if (!pl.getAttribute('src')) return;
+    document.getElementById('v-now').textContent='⚠️ Lecture impossible : format non supporté par le navigateur (mkv/avi ?) ou fichier illisible.';
+  });
+})();
+
+function showToast(txt) { var t=document.getElementById('save-toast'); t.textContent=txt; t.classList.add('show'); setTimeout(function(){t.classList.remove('show');},3000); }
+function saveName(g) { return currentUser+'_'+g.console+'_'+g.name.replace(/[^a-zA-Z0-9_-]/g,'_')+'.srm'; }
+
+function formatDuration(seconds) {
+  if (!seconds||seconds<60) return seconds+'s';
+  var m=Math.floor(seconds/60), s=seconds%60;
+  if (m<60) return m+'min'+(s>0?' '+s+'s':'');
+  var h=Math.floor(m/60), rm=m%60;
+  return h+'h'+(rm>0?' '+rm+'min':'');
+}
+
+function formatDate(ts) {
+  var d=new Date(ts), now=new Date(), diff=Math.floor((now-d)/1000);
+  if (diff<60) return "à l'instant";
+  if (diff<3600) return 'il y a '+Math.floor(diff/60)+'min';
+  if (diff<86400) return 'il y a '+Math.floor(diff/3600)+'h';
+  if (diff<604800) return 'il y a '+Math.floor(diff/86400)+'j';
+  return d.toLocaleDateString('fr-FR');
+}
+
+function openHistory() {
+  if (!currentUser) return;
+  document.getElementById('history-list').innerHTML='<p style="text-align:center;color:#888;padding:20px">Chargement...</p>';
+  document.getElementById('history-overlay').classList.remove('hidden');
+  fetch(API+'/history/'+currentUser).then(function(r){return r.json();}).then(function(d){
+    renderHistory(d.history||[]);
+  });
+}
+function closeHistory() { document.getElementById('history-overlay').classList.add('hidden'); }
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeHistory();});
+
+function renderHistory(history) {
+  _historyCache=history;
+  var list=document.getElementById('history-list');
+  if (!history.length) {
+    list.innerHTML='<p style="text-align:center;color:#888;padding:20px">Aucune session pour l\'instant</p>';
+    return;
+  }
+  var html='';
+  for (var i=0;i<history.length;i++) {
+    var h=history[i];
+    var c=CONSOLES[h.console]||{icon:'',label:h.console};
+    html+='<div class="history-card">';
+    html+='<img class="history-console-icon" src="'+c.icon+'" onerror="this.style.display=\'none\'" alt="">';
+    html+='<div class="history-info">';
+    html+='<div class="history-name">'+h.name+'</div>';
+    html+='<div class="history-meta"><span>'+c.label+'</span><span>⏱ '+formatDuration(h.duration)+'</span><span>'+formatDate(h.playedAt)+'</span></div>';
+    html+='</div>';
+    html+='<button class="history-play" data-idx="'+i+'">▶ Jouer</button>';
+    html+='</div>';
+  }
+  list.innerHTML=html;
+  list.querySelectorAll('.history-play').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      launchFromHistory(parseInt(this.getAttribute('data-idx')));
+    });
+  });
+}
+
+function launchFromHistory(i) {
+  var h=_historyCache[i]; if(!h)return;
+  closeHistory();
+  var id=Math.random().toString(36).substr(2,9);
+  var g={id:id,name:h.name,console:h.console,file:h.file};
+  gameRegistry[id]=g;
+  launchGame(id);
+}
+
+function saveSessionHistory(g,durationSeconds) {
+  if (!currentUser||!g) return;
+  fetch(API+'/history/'+currentUser,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name:g.name,console:g.console,file:g.file,duration:durationSeconds})
+  }).catch(function(){});
+}
+
+function injectSaveToIndexedDB(saveData,gameName,coreName,callback) {
+  if (!saveData||!saveData.byteLength){callback();return;}
+  var folder=CORE_FOLDER[coreName]||coreName;
+  var basePath='/data/saves/'+folder;
+  var savePath=basePath+'/'+gameName+'.srm';
+  var encodedPath=basePath+'/'+encodeURIComponent(gameName+'.srm').replace(/\(/g,'%28').replace(/\)/g,'%29');
+  var req=indexedDB.open('/data/saves');
+  req.onupgradeneeded=function(e){var db=e.target.result;if(!db.objectStoreNames.contains('FILE_DATA'))db.createObjectStore('FILE_DATA');};
+  req.onsuccess=function(e){
+    var db=e.target.result;
+    // D'abord supprimer toutes les anciennes entrees de saves pour ce jeu
+    var tx1=db.transaction('FILE_DATA','readwrite');
+    var store1=tx1.objectStore('FILE_DATA');
+    store1.delete(savePath);
+    store1.delete(encodedPath);
+    tx1.oncomplete=function(){
+      // Puis ecrire les nouvelles donnees
+      var tx2=db.transaction('FILE_DATA','readwrite');
+      var store2=tx2.objectStore('FILE_DATA');
+      var now=new Date(),contents=new Uint8Array(saveData);
+      store2.put({timestamp:now,mode:16872},'/data/saves');
+      store2.put({timestamp:now,mode:16872},basePath);
+      store2.put({timestamp:now,mode:33206,contents:contents},savePath);
+      store2.put({timestamp:now,mode:33206,contents:contents},encodedPath);
+      var savePathSav=basePath+'/'+gameName+'.sav';
+      var encodedPathSav=basePath+'/'+encodeURIComponent(gameName+'.sav').replace(/\(/g,'%28').replace(/\)/g,'%29');
+      store2.put({timestamp:now,mode:33206,contents:contents},savePathSav);
+      store2.put({timestamp:now,mode:33206,contents:contents},encodedPathSav);
+      tx2.oncomplete=function(){db.close();callback();};
+      tx2.onerror=function(){db.close();callback();};
+    };
+    tx1.onerror=function(){db.close();callback();};
+  };
+  req.onerror=function(){callback();};
+}
+
+function pushSave() {
+  var iframe=document.getElementById('ejs-iframe');
+  var win=iframe?iframe.contentWindow:null;
+  if(!win||!win.EJS_emulator||!win.EJS_emulator.gameManager)return;
+  if(win.EJS_core==='azahar')return;
+  try {
+    var gm=win.EJS_emulator.gameManager;
+    gm.saveSaveFiles();
+    gm.FS.syncfs(false,function(){
+      try {
+        var cores=gm.FS.readdir('/data/saves/');
+        cores.forEach(function(core){
+          if(core==='.'||core==='..') return;
+          try {
+            var dir='/data/saves/'+core+'/';
+            var files=gm.FS.readdir(dir);
+            // Copier les fichiers encodes vers non-encodes
+            files.forEach(function(f){
+              if(f==='.'||f==='..') return;
+              if(f.indexOf('%')===-1) return;
+              if(!f.endsWith('.srm')&&!f.endsWith('.sav')) return;
+              try{
+                var decoded=decodeURIComponent(f);
+                var data=gm.FS.readFile(dir+f);
+                gm.FS.writeFile(dir+decoded,data);
+              }catch(e){}
+            });
+            // Uploader les fichiers non-encodes
+            files=gm.FS.readdir(dir);
+            var srmFile=null, savFile=null;
+            files.forEach(function(f){
+              if(f==='.'||f==='..') return;
+              if(f.indexOf('%')!==-1) return;
+              try{
+                var d=gm.FS.readFile(dir+f);
+                var nonNuls=Array.from(d).filter(function(b){return b!==0;}).length;
+                if(nonNuls===0) return;
+                if(f.endsWith('.srm')) srmFile=d;
+                else if(f.endsWith('.sav')) savFile=d;
+              }catch(e){}
+            });
+            var best=srmFile||savFile;
+            if(best&&currentGameObj)uploadSave(currentGameObj,best);
+          }catch(e){}
+        });
+      }catch(e){}
+    });
+  }catch(e){console.warn('AutoSave error:',e);}
+}
+
+function uploadSave(g,data) {
+  if (!currentUser) return;
+  savesCache[saveName(g)]=new Uint8Array(data).buffer;
+  var fd=new FormData();
+  fd.append('save',new Blob([data]),saveName(g));
+  fd.append('gameName',g.name);
+  fd.append('consoleName',g.console);
+  fd.append('core',CONSOLES[g.console].core);
+  fetch(API+'/save/'+currentUser,{method:'POST',body:fd})
+    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);showToast('💾 Save sauvegardée !');})
+    .catch(function(){showToast('⚠️ Erreur save');});
+}
+
+var savesCache = {};
+
+// Retourne {ok:true,data:ArrayBuffer|null} (null = pas de save) ou {ok:false} (erreur réseau/serveur)
+function downloadSaveFile(filename) {
+  if (!currentUser) return Promise.resolve({ok:true,data:null});
+  return fetch(API+'/save/'+currentUser+'/'+encodeURIComponent(filename))
+    .then(function(r){
+      if (r.status===404) return {ok:true,data:null};
+      if (!r.ok) return {ok:false,data:null};
+      return r.arrayBuffer().then(function(b){return {ok:true,data:b};});
+    })
+    .catch(function(){return {ok:false,data:null};});
+}
+function downloadSave(g) { return downloadSaveFile(saveName(g)); }
+
+// Télécharge TOUTES les saves du profil pendant l'écran de chargement (barre de progression)
+function prefetchSaves(user) {
+  savesCache = {};
+  var fill=document.getElementById('saves-bar-fill'), msg=document.getElementById('saves-msg');
+  fill.style.width='0%'; msg.textContent='Recherche de tes sauvegardes…';
+  function loadKeys(keys) {
+    var total=keys.length, done=0, i=0;
+    if (!total) { msg.textContent='Aucune sauvegarde à installer'; return Promise.resolve(); }
+    msg.textContent='Sauvegardes installées : 0 / '+total;
+    function worker() {
+      if (i>=total) return Promise.resolve();
+      var key=keys[i++];
+      return downloadSaveFile(key).then(function(res){
+        if (res.ok&&res.data) savesCache[key]=res.data;
+        done++;
+        fill.style.width=Math.round(done/total*100)+'%';
+        msg.textContent='Sauvegardes installées : '+done+' / '+total;
+      }).then(worker);
+    }
+    var pool=[]; for (var k=0;k<Math.min(6,total);k++) pool.push(worker());
+    return Promise.all(pool);
+  }
+  var job=fetch(API+'/saves/'+user).then(function(r){
+    if (!r.ok) throw new Error('no-list');
+    return r.json();
+  }).then(function(d){
+    var arr=Array.isArray(d)?d:(d.saves||d.files||[]);
+    var keys=arr.map(function(x){return typeof x==='string'?x:(x&&(x.name||x.file));})
+      .filter(function(k){return k&&k.indexOf(user+'_')===0;});
+    return loadKeys(keys);
+  }).catch(function(){
+    // Repli si l'endpoint liste n'existe pas : les 40 derniers jeux de l'historique
+    return fetch(API+'/history/'+user).then(function(r){return r.json();}).then(function(d){
+      var seen={}, keys=[];
+      (d.history||[]).forEach(function(h){
+        if (!h||!CONSOLES[h.console]) return;
+        var key=saveName({name:h.name,console:h.console});
+        if (!seen[key]&&keys.length<40) { seen[key]=1; keys.push(key); }
+      });
+      return loadKeys(keys);
+    });
+  }).catch(function(){});
+  var timeout=new Promise(function(res){setTimeout(res,60000);});
+  return Promise.race([job,timeout]);
+}
+
+// Cache d'abord, sinon téléchargement direct. Retourne ArrayBuffer, null (pas de save) ou false (annulé)
+function getSaveForLaunch(g) {
+  var key=saveName(g);
+  if (savesCache[key]) return Promise.resolve(savesCache[key]);
+  return downloadSave(g).then(function(res){
+    if (res.ok) { if (res.data) savesCache[key]=res.data; return res.data; }
+    return confirm("Impossible de récupérer ta sauvegarde (erreur serveur/réseau).\nLancer quand même ? Ta save risque d'être écrasée.") ? null : false;
+  });
+}
+
+function fetchFolder(url,cname) {
+  return fetch(url).then(function(r){if(!r.ok)return[];return r.text();}).then(function(text){
+    if(!text)return[];
+    var doc=new DOMParser().parseFromString(text,'text/html');
+    var exts=CONSOLES[cname].ext,games=[];
+    Array.from(doc.querySelectorAll('a[href]')).forEach(function(a){
+      var href=a.getAttribute('href');
+      if(exts.some(function(e){return href.toLowerCase().endsWith(e);})){
+        var name=decodeURIComponent(href.split('/').pop().replace(/\.[^.]+$/,''));
+        var id=Math.random().toString(36).substr(2,9);
+        var g={id:id,name:name,file:url+'/'+href,console:cname};
+        gameRegistry[id]=g; games.push(g);
+      }
+    });
+    return games;
+  }).catch(function(){return[];});
+}
+
+function loadAllGames() {
+  document.getElementById('loading').style.display='block';
+  var base='/roms/roms';
+  var promises=GB_FOLDERS.map(function(f){return fetchFolder(base+'/GB/'+f,'GB');});
+  ['GBC','GBA','NES','SNES','MEGADRIVE','N64','PS1','DS','3DS'].forEach(function(c){promises.push(fetchFolder(base+'/'+c,c));});
+  Promise.all(promises).then(function(results){
+    allGames=[];
+    results.forEach(function(g){allGames=allGames.concat(g);});
+    allGames.sort(function(a,b){return a.name.localeCompare(b.name);});
+    document.getElementById('loading').style.display='none';
+    document.getElementById('placeholder').style.display='block';
+  });
+}
+
+function toggleSearch() {
+  var input=document.getElementById('search');
+  input.classList.toggle('visible');
+  if(input.classList.contains('visible'))input.focus();
+  else{input.value='';filterGames();}
+}
+
+function renderGames(games) {
+  var list=document.getElementById('games-list');
+  if(!currentConsole){list.innerHTML='';return;}
+  if(!games.length){list.innerHTML='<p style="color:#888;grid-column:1/-1;text-align:center">Aucun jeu trouvé</p>';return;}
+  list.innerHTML=games.map(function(g){
+    var c=CONSOLES[g.console];
+    return '<div class="game-card" onclick="launchGame(\''+g.id+'\')"><div class="game-title">'+g.name+'</div><div class="game-console"><img src="'+c.icon+'" onerror="this.style.display=\'none\'" alt=""><span>'+c.label+'</span></div></div>';
+  }).join('');
+}
+
+function filterConsole(c,e) {
+  var btn=e.currentTarget,was=btn.classList.contains('active');
+  document.querySelectorAll('.console-btn').forEach(function(b){b.classList.remove('active');});
+  currentConsole=was?null:c;
+  if(!was)btn.classList.add('active');
+  document.getElementById('placeholder').style.display=currentConsole?'none':'block';
+  filterGames();
+}
+
+function filterGames() {
+  var q=document.getElementById('search').value.toLowerCase();
+  if(!currentConsole){renderGames([]);return;}
+  renderGames(allGames.filter(function(g){return g.console===currentConsole&&g.name.toLowerCase().indexOf(q)!==-1;}));
+}
+
+function resetCloseBtnTimer() {
+  var btn=document.getElementById('close-btn');
+  btn.classList.remove('hidden'); clearTimeout(closeBtnTimeout);
+  closeBtnTimeout=setTimeout(function(){btn.classList.add('hidden');},5000);
+}
+
+function launchGame(id) {
+  var g=gameRegistry[id]; if(!g)return;
+  currentGameObj=g;
+  sessionStart=Date.now();
+  var core=CONSOLES[g.console].core;
+  var folderJson=JSON.stringify(CORE_FOLDER);
+  getSaveForLaunch(g).then(function(saveData){
+    if (saveData===false) { currentGameObj=null; sessionStart=null; return; }
+    injectSaveToIndexedDB(saveData,g.name,core,function(){
+      window._pendingSaveData=saveData;
+      window._pendingGameName=g.name;
+      window._pendingCoreName=core;
+      var frame=document.getElementById('game-frame'); frame.innerHTML='';
+      var iframe=document.createElement('iframe'); iframe.id='ejs-iframe'; frame.appendChild(iframe);
+      var doc=iframe.contentWindow.document; doc.open();
+      var threadsLine=(core==='azahar')?'EJS_threads=true;':'';
+      var dataPath=(core==='azahar')?'https://cdn.emulatorjs.org/nightly/data/':'/emulatorjs/data/';
+      doc.write(
+        '<!DOCTYPE html><html><head><style>html,body{margin:0;padding:0;width:100%;height:100%;background:#000;overflow:hidden;}</style></head><body>'+
+        '<div id="game" style="width:100%;height:100%"></div>'+
+        '<script>'+
+          'EJS_player="#game";'+
+          'EJS_core="'+core+'";'+
+          'EJS_gameUrl="'+g.file+'";'+
+          'EJS_pathtodata="'+dataPath+'";'+
+          threadsLine+
+        '<\/script>'+
+        '<script src="'+dataPath+'loader.js?t='+Date.now()+'"><\/script>'+
+        '</body></html>'
+      );
+      doc.close();
+      iframe.addEventListener('load',function(){
+        try{iframe.contentWindow.document.addEventListener('mousemove',resetCloseBtnTimer);}catch(e){}
+        var patchInterval=setInterval(function(){
+          try {
+            var win=iframe.contentWindow;
+            if(!win.EJS_emulator)return;
+            var orig=win.EJS_emulator.startGame.bind(win.EJS_emulator);
+            win.EJS_emulator.startGame=function(){
+              if(saveData&&saveData.byteLength){
+                try{
+                  var cf=JSON.parse(folderJson);
+                  var folder=cf[core]||core;
+                  var base='/data/saves/'+folder;
+                  var path=base+'/'+g.name+'.srm';
+                  var gm=win.EJS_emulator.gameManager;
+                  var arr=new Uint8Array(saveData);
+                  try{gm.FS.mkdir('/data/saves');}catch(e){}
+                  try{gm.FS.mkdir(base);}catch(e){}
+                  gm.FS.writeFile(path,arr);
+                  var pathSav=base+'/'+g.name+'.sav';
+                  var encodedSav=base+'/'+encodeURIComponent(g.name+'.sav').replace(/\(/g,'%28').replace(/\)/g,'%29');
+                  try{gm.FS.writeFile(pathSav,arr);}catch(e){}
+                  try{gm.FS.writeFile(encodedSav,arr);}catch(e){}
+                  console.log('save patchee avant callMain:',path,arr.byteLength);
+                }catch(e){console.error('patch error:',e);}
+              }
+              return orig();
+            };
+            clearInterval(patchInterval);
+            console.log('startGame patche!');
+          }catch(e){}
+        },10);
+      });
+      document.getElementById('emulator-container').classList.add('visible');
+      resetCloseBtnTimer();
+      if(autoSaveInterval)clearInterval(autoSaveInterval);
+      autoSaveInterval=setInterval(pushSave,60000);
+    });
+  });
+}
+
+function closeEmulator() {
+  if(closing)return; closing=true; clearTimeout(closeBtnTimeout);
+  if(autoSaveInterval){clearInterval(autoSaveInterval);autoSaveInterval=null;}
+  if(sessionStart&&currentGameObj){
+    var duration=Math.floor((Date.now()-sessionStart)/1000);
+    saveSessionHistory(currentGameObj,duration);
+    sessionStart=null;
+  }
+  var iframe=document.getElementById('ejs-iframe');
+  var win=iframe?iframe.contentWindow:null,finished=false;
+  function finishClose(){
+    if(finished)return; finished=true; closing=false;
+    document.getElementById('game-frame').innerHTML='';
+    document.getElementById('emulator-container').classList.remove('visible');
+  }
+  if(win&&win.EJS_emulator&&win.EJS_emulator.gameManager){
+    try{
+      var gm=win.EJS_emulator.gameManager;
+      gm.saveSaveFiles();
+      gm.FS.syncfs(false,function(){
+        try{
+          var cores=gm.FS.readdir('/data/saves/');
+          cores.forEach(function(core){
+            if(core==='.'||core==='..') return;
+            try{
+              var dir2='/data/saves/'+core+'/';
+              var files=gm.FS.readdir(dir2);
+              files.forEach(function(f){
+                if(f==='.'||f==='..') return;
+                if(f.indexOf('%')===-1) return;
+                if(!f.endsWith('.srm')&&!f.endsWith('.sav')) return;
+                try{
+                  var decoded=decodeURIComponent(f);
+                  var data=gm.FS.readFile(dir2+f);
+                  gm.FS.writeFile(dir2+decoded,data);
+                }catch(e){}
+              });
+              files=gm.FS.readdir(dir2);
+              var srmFile2=null, savFile2=null;
+              files.forEach(function(f){
+                if(f==='.'||f==='..') return;
+                if(f.indexOf('%')!==-1) return;
+                try{
+                  var d=gm.FS.readFile(dir2+f);
+                  var nonNuls=Array.from(d).filter(function(b){return b!==0;}).length;
+                  if(nonNuls===0) return;
+                  if(f.endsWith('.srm')) srmFile2=d;
+                  else if(f.endsWith('.sav')) savFile2=d;
+                }catch(e){}
+              });
+              var best2=srmFile2||savFile2;
+              if(best2&&currentGameObj)uploadSave(currentGameObj,best2);
+            }catch(e){}
+          });
+        }catch(e){}
+        finishClose();
+      });
+      setTimeout(finishClose,2000); return;
+    }catch(e){console.warn('Save error:',e);}
+  }
+  finishClose();
+}
+
+document.getElementById('emulator-container').addEventListener('mousemove',resetCloseBtnTimer);
+loadAllGames();
+loadProfiles();
+loadNews();
+</script>
+</body>
+</html>
